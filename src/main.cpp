@@ -1138,7 +1138,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
 
    /// debug print
    printf("GetNextWorkRequired RETARGET\n");
-   printf("nActualTargetTime = %"PRI64d"   nActualTimespan = %"PRI64d"  over %d blocks\n", nActualTargetTime, nActualTimespan,nLookBackCount);
+   printf("nActualTargetTime = %"PRI64d"   nActualTimespan = %"PRI64d"  avg=%lld\n", nActualTargetTime, nActualTimespan,nActualTimespan/nLookBackCount);
    printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
    printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
 
