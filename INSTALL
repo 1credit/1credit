@@ -1,0 +1,9 @@
+Building 1CRedit
+
+See doc/readme-qt.rst for instructions on building 1CRedit-Qt,
+the intended-for-end-users, nice-graphical-interface, reference
+implementation of 1CRedit.
+
+See doc/build-*.txt for instructions on building 1CRedit,
+the intended-for-services, no-graphical-interface, reference
+implementation of 1CRedit.
