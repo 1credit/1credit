@@ -37,7 +37,7 @@ CONFIG += static
 #OPENSSL_LIB_PATH=C:/deps/openssl-1.0.1g
 
 # 
-# Settings for building under Linux, comment out for Windows builds
+# Settings for building under Linux, comment out for Windows & Mac Os builds
 #
 BDB_INCLUDE_PATH=/usr/include/db4.8
 
