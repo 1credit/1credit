@@ -1123,23 +1123,25 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
       nActualTimeSpan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
       nActualTargetTime = TargetTimeSpan*nLookBackCount/LookBackDepth;
       /// debug print
-      printf("Retarget: nActualTargetTime = %"PRI64d"   nActualTimespan = %"PRI64d"  avg=%lld\n", 
-          nActualTargetTime, nActualTimeSpan,nActualTimeSpan/nLookBackCount);
+      printf("Retarget(%d): nActualTargetTime = %"PRI64d"   nActualTimespan = %"PRI64d"  avg=%lld\n", 
+          pindexLast->nHeight,dActualTargetTime, nActualTimeSpan,nActualTimeSpan/nLookBackCount);
    }
    else { 
       const int64 weight[LookBackDepth] = {35,30,25,20,15,10,5};
       int64 timediff = 0;
       int64 totalweight = 0;
       const CBlockIndex* pindex = pindexLast;
+      printf("Retarget(%d):  Looking at previous %d completion times:",
+         pindex->nHeight,nLookBackCount);
       for (int i=0; i<nLookBackCount; i++) {
       	  totalweight += weight[i];
           timediff = pindex->pprev->GetBlockTime() - pindex->GetBlockTime();
           nActualTimeSpan +=  timediff * weight[i];
-	  printf("Retarget: Block %d: Time to solve = %"PRI64d", weight %"PRI64d", total = %"PRI64d"\n",
-	     pindex->nHeight, timediff, weight[i], nActualTimeSpan);
+	  printf("  (%d):%"PRI64d"", pindex->nHeight, timediff);
+	  pindex = pindex->pprev;
       }
       nActualTargetTime = TargetTimeSpan*totalweight;
-      printf("Retarget: Total weight = %"PRI64d"  Weighted target = %"PRI64d"\n",
+      printf("\n    Total weight = %"PRI64d"  Weighted target time = %"PRI64d"\n",
           totalweight, nActualTargetTime);
    }
 
@@ -1148,7 +1150,8 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
        nActualTimeSpan = nActualTargetTime/4;
    if (nActualTimeSpan > nActualTargetTime*16) // if avg greater than 8192, set to 8192
        nActualTimeSpan = nActualTargetTime*16;
-   printf("Retarget: Adjusting by %"PRI64d" / %"PRI64d"/n",nActualTimeSpan,nActualTargetTime);
+   printf("Retarget(%d): Adjusting by %"PRI64d" / %"PRI64d"\n",
+      ,pindexLast->nHeight,nActualTimeSpan,nActualTargetTime);
 
    // Retarget
    CBigNum bnNew;
@@ -1159,8 +1162,9 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
    if (bnNew > bnProofOfWorkLimit)
        bnNew = bnProofOfWorkLimit;
 
-   printf("Retarget Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
-   printf("Retarget After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+   printf("Difficulty Before: %s\n", CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
+   printf("Difficulty After:  %s\n", bnNew.getuint256().ToString().c_str());
+   printf("Retarget(%d): End of Adjustments\n",pindexLast->nHeight);
 
    return bnNew.GetCompact();
 }
