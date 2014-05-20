@@ -1293,8 +1293,8 @@ void CBlockHeader::UpdateTime(const CBlockIndex* pindexPrev)
     nTime = max(pindexPrev->GetMedianTimePast()+1, GetAdjustedTime());
 
     // Updating time can change work required on testnet:
-    if (fTestNet)
-        nBits = GetNextWorkRequired(pindexPrev, this);
+//    if (fTestNet)
+ //       nBits = GetNextWorkRequired(pindexPrev, this);
 }
 
 
