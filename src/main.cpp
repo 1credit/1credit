@@ -1069,9 +1069,9 @@ int64 static GetBlockValue(int nHeight, int64 nFees)
     return nSubsidy + nFees;
 }
 
-static const unsigned int nTargetSpacing = 512; // 1CRedit: ~8.5 minutes
-static const unsigned int nLookBackDepth = 7;   // 1Credit:  About 1 hour
-static const int64 nTargetTimespan = nTargetSpacing * nLookBackDepth;
+static const int TargetSpacing = 512; // 1CRedit: ~8.5 minutes
+static const int LookBackDepth = 7;   // 1Credit:  About 1 hour
+static const int64 TargetTimeSpan = TargetSpacing * LookBackDepth;
 
 //
 // minimum amount of work that could possibly be required nTime after
@@ -1081,7 +1081,7 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
 {
     // Testnet has min-difficulty blocks
     // after nTargetSpacing*2 time between blocks:
-    if (fTestNet && nTime > nTargetSpacing*2)
+    if (fTestNet && nTime > TargetSpacing*2)
         return bnProofOfWorkLimit.GetCompact();
 
     CBigNum bnResult;
@@ -1091,7 +1091,7 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
         // Maximum 400% adjustment...
         bnResult *= 4;
         // ... in best-case exactly 4-times-normal target time
-        nTime -= nTargetTimespan*4;
+        nTime -= TargetTimeSpan*4;
     }
     if (bnResult > bnProofOfWorkLimit)
         bnResult = bnProofOfWorkLimit;
@@ -1102,9 +1102,9 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
 unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock)
 {
    unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
-   unsigned int nLookBackCount = 0;
-   int64 nActualTimespan;
-   int64 nActualTargetTime;
+   int nLookBackCount = 0;
+   int64 nActualTimeSpan=0;
+   int64 nActualTargetTime=0;
 
    // Genesis block & first block
    if (pindexLast == NULL || pindexLast->nHeight <= 1)
@@ -1112,35 +1112,55 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
 
    // Go back the number of blocks we desire, but not to genesis
    const CBlockIndex* pindexFirst = pindexLast;
-   while (pindexFirst->nHeight>1 && nLookBackCount < nLookBackDepth) {
+   while (pindexFirst->nHeight>1 && nLookBackCount < LookBackDepth) {
       nLookBackCount++;
       pindexFirst = pindexFirst->pprev;
    }
    assert(pindexFirst);
 
-   // Limit adjustment step
-   nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-   nActualTargetTime = nTargetTimespan*nLookBackCount/nLookBackDepth;
+   if (pindexLast->nHeight < 2500 ) {  // Hard fork at block 2500 
+      // Limit adjustment step
+      nActualTimeSpan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
+      nActualTargetTime = TargetTimeSpan*nLookBackCount/LookBackDepth;
+      /// debug print
+      printf("Retarget: nActualTargetTime = %"PRI64d"   nActualTimespan = %"PRI64d"  avg=%lld\n", 
+          nActualTargetTime, nActualTimeSpan,nActualTimeSpan/nLookBackCount);
+   }
+   else { 
+      const int64 weight[LookBackDepth] = {35,30,25,20,15,10,5};
+      int64 timediff = 0;
+      int64 totalweight = 0;
+      const CBlockIndex* pindex = pindexLast;
+      for (int i=0; i<nLookBackCount; i++) {
+      	  totalweight += weight[i];
+          timediff = pindex->pprev->GetBlockTime() - pindex->GetBlockTime();
+          nActualTimeSpan +=  timediff * weight[i];
+	  printf("Retarget: Block %d: Time to solve = %"PRI64d", weight %"PRI64d", total = %"PRI64d"\n",
+	     pindex->nHeight, timediff, weight[i], nActualTimeSpan);
+      }
+      nActualTargetTime = TargetTimeSpan*totalweight;
+      printf("Retarget: Total weight = %"PRI64d"  Weighted target = %"PRI64d"\n",
+          totalweight, nActualTargetTime);
+   }
 
-   if (nActualTimespan < nActualTargetTime/4)
-       nActualTimespan = nActualTargetTime/4;
-   if (nActualTimespan > nActualTargetTime*16)
-       nActualTimespan = nActualTargetTime*16;
+   //  limit the swing, but allow it to come down faster than going up
+   if (nActualTimeSpan < nActualTargetTime/4)  // If avg less than 128, set to 128
+       nActualTimeSpan = nActualTargetTime/4;
+   if (nActualTimeSpan > nActualTargetTime*16) // if avg greater than 8192, set to 8192
+       nActualTimeSpan = nActualTargetTime*16;
+   printf("Retarget: Adjusting by %"PRI64d" / %"PRI64d"/n",nActualTimeSpan,nActualTargetTime);
 
    // Retarget
    CBigNum bnNew;
    bnNew.SetCompact(pindexLast->nBits);
-   bnNew *= nActualTimespan;
+   bnNew *= nActualTimeSpan;
    bnNew /= nActualTargetTime;
 
    if (bnNew > bnProofOfWorkLimit)
        bnNew = bnProofOfWorkLimit;
 
-   /// debug print
-   printf("GetNextWorkRequired RETARGET\n");
-   printf("nActualTargetTime = %"PRI64d"   nActualTimespan = %"PRI64d"  avg=%lld\n", nActualTargetTime, nActualTimespan,nActualTimespan/nLookBackCount);
-   printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
-   printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+   printf("Retarget Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
+   printf("Retarget After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
 
    return bnNew.GetCompact();
 }
@@ -2701,7 +2721,7 @@ bool LoadBlockIndex()
         pchMessageStart[1] = 0xc1;
         pchMessageStart[2] = 0xb7;
         pchMessageStart[3] = 0xdc;
-        hashGenesisBlock = uint256("0x7a2a76bf4a4994188d8ac0afaa10eea71d467d18924ee4b610412301f548c24");
+        hashGenesisBlock = uint256("0x7a2a76bf4a4994188d8ac0afaa10eea71d467d18924ee4b610412301f548c241");
     }
 
     //
