@@ -1124,7 +1124,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
       nActualTargetTime = TargetTimeSpan*nLookBackCount/LookBackDepth;
       /// debug print
       printf("Retarget(%d): nActualTargetTime = %"PRI64d"   nActualTimespan = %"PRI64d"  avg=%lld\n", 
-          pindexLast->nHeight,dActualTargetTime, nActualTimeSpan,nActualTimeSpan/nLookBackCount);
+          pindexLast->nHeight,nActualTargetTime, nActualTimeSpan,nActualTimeSpan/nLookBackCount);
    }
    else { 
       const int64 weight[LookBackDepth] = {35,30,25,20,15,10,5};
@@ -1151,7 +1151,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
    if (nActualTimeSpan > nActualTargetTime*16) // if avg greater than 8192, set to 8192
        nActualTimeSpan = nActualTargetTime*16;
    printf("Retarget(%d): Adjusting by %"PRI64d" / %"PRI64d"\n",
-      ,pindexLast->nHeight,nActualTimeSpan,nActualTargetTime);
+      pindexLast->nHeight,nActualTimeSpan,nActualTargetTime);
 
    // Retarget
    CBigNum bnNew;
