@@ -1122,6 +1122,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
       // Limit adjustment step
       nActualTimeSpan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
       nActualTargetTime = TargetTimeSpan*nLookBackCount/LookBackDepth;
+      if (fTestNet) nActualTargetTime /=16;  // Run testnet blocks MUCH faster
       /// debug print
       printf("Retarget(%d): nActualTargetTime = %"PRI64d"   nActualTimespan = %"PRI64d"  avg=%lld\n", 
           pindexLast->nHeight,nActualTargetTime, nActualTimeSpan,nActualTimeSpan/nLookBackCount);
@@ -1141,6 +1142,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
 	  pindex = pindex->pprev;
       }
       nActualTargetTime = TargetTimeSpan*totalweight;
+      if (fTestNet) nActualTargetTime /=4;  // Run testnet blocks SOMEWHAT faster
       printf("\n    Total weight = %"PRI64d"  Weighted target time = %"PRI64d"\n",
           totalweight, nActualTargetTime);
    }
