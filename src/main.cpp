@@ -1128,29 +1128,31 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
           pindexLast->nHeight,nActualTargetTime, nActualTimeSpan,nActualTimeSpan/nLookBackCount);
    }
    else { 
-      const int64 weight[LookBackDepth] = {35,30,25,20,15,10,5};
-      int64 timediff = 0;
-      int64 totalweight = 0;
+      const int64 Weight[LookBackDepth] = {35,30,25,20,15,10,5};
+      int64 TimeDiff = 0;
+      int64 TotalTimeDiff = 0;
+      int64 TotalWeight = 0;
+      int64 WeightedTimeSum = 0;
       const CBlockIndex* pindex = pindexLast;
-      printf("Retarget(%d):  Looking at previous %d completion times:",
-         pindex->nHeight,nLookBackCount);
+      printf("Retarget(%d): Previous %d completion times:", pindex->nHeight,nLookBackCount);
       for (int i=0; i<nLookBackCount; i++) {
-      	  totalweight += weight[i];
-          timediff = pindex->pprev->GetBlockTime() - pindex->GetBlockTime();
-          nActualTimeSpan +=  timediff * weight[i];
-	  printf("  (%d):%"PRI64d"", pindex->nHeight, timediff);
+      	  TotalWeight += Weight[i];
+          TimeDiff = pindex->GetBlockTime() - pindex->pprev->GetBlockTime();
+	  TotalTimeDiff += TimeDiff;
+          WeightedTimeSum += (TimeDiff * Weight[i]);
+	  printf("  (%d):%"PRI64d"", pindex->nHeight, TimeDiff);
 	  pindex = pindex->pprev;
       }
-      nActualTargetTime = TargetTimeSpan*totalweight;
+      nActualTargetTime = TargetTimeSpan*TotalWeight;
       if (fTestNet) nActualTargetTime /=4;  // Run testnet blocks SOMEWHAT faster
-      printf("\n    Total weight = %"PRI64d"  Weighted target time = %"PRI64d"\n",
-          totalweight, nActualTargetTime);
+      printf("nWeighted Time Span = %"PRI64d" TotalTimeDiff = %"PRI64d" Avg = %"PRI64d"\n", 
+         nActualTimeSpan,TotalTimeDiff,TotalTimeDiff/nLookBackCount);
    }
 
    //  limit the swing, but allow it to come down faster than going up
    if (nActualTimeSpan < nActualTargetTime/4)  // If avg less than 128, set to 128
        nActualTimeSpan = nActualTargetTime/4;
-   if (nActualTimeSpan > nActualTargetTime*16) // if avg greater than 8192, set to 8192
+   else if (nActualTimeSpan > nActualTargetTime*16) // if avg greater than 8192, set to 8192
        nActualTimeSpan = nActualTargetTime*16;
    printf("Retarget(%d): Adjusting by %"PRI64d" / %"PRI64d"\n",
       pindexLast->nHeight,nActualTimeSpan,nActualTargetTime);
