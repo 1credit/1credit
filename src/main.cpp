@@ -1145,8 +1145,9 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
       }
       nActualTargetTime = TargetTimeSpan*TotalWeight;
       if (fTestNet) nActualTargetTime /=4;  // Run testnet blocks SOMEWHAT faster
-      printf("nWeighted Time Span = %"PRI64d" TotalTimeDiff = %"PRI64d" Avg = %"PRI64d"\n", 
-         nActualTimeSpan,TotalTimeDiff,TotalTimeDiff/nLookBackCount);
+      printf("nWeightedTimeSum = %"PRI64d" TotalTimeDiff = %"PRI64d" Avg = %"PRI64d"\n", 
+         WeightedTimeSum,TotalTimeDiff,TotalTimeDiff/nLookBackCount);
+      nActualTimeSpan = WeightedTimeSum;  // Hack so the rest of the code flows
    }
 
    //  limit the swing, but allow it to come down faster than going up
