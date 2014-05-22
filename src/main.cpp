@@ -1118,11 +1118,11 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
    }
    assert(pindexFirst);
 
-   if (pindexLast->nHeight < 2500 ) {  // Hard fork at block 2500 
+   if (pindexLast->nHeight < 4000 ) {  // Hard fork at block 2500 
       // Limit adjustment step
       nActualTimeSpan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
       nActualTargetTime = TargetTimeSpan*nLookBackCount/LookBackDepth;
-      if (fTestNet) nActualTargetTime /=16;  // Run testnet blocks MUCH faster
+      if (fTestNet) nActualTargetTime = 4;  // 4 second blocks for testnet until fork
       /// debug print
       printf("Retarget(%d): nActualTargetTime = %"PRI64d"   nActualTimespan = %"PRI64d"  avg=%lld\n", 
           pindexLast->nHeight,nActualTargetTime, nActualTimeSpan,nActualTimeSpan/nLookBackCount);
@@ -1145,7 +1145,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
       }
       nActualTargetTime = TargetTimeSpan*TotalWeight;
       if (fTestNet) nActualTargetTime /=4;  // Run testnet blocks SOMEWHAT faster
-      printf("nWeightedTimeSum = %"PRI64d" TotalTimeDiff = %"PRI64d" Avg = %"PRI64d"\n", 
+      printf("\nWeightedTimeSum = %"PRI64d" TotalTimeDiff = %"PRI64d" Avg = %"PRI64d"\n", 
          WeightedTimeSum,TotalTimeDiff,TotalTimeDiff/nLookBackCount);
       nActualTimeSpan = WeightedTimeSum;  // Hack so the rest of the code flows
    }
