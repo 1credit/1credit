@@ -1122,7 +1122,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
       // Limit adjustment step
       nActualTimeSpan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
       nActualTargetTime = TargetTimeSpan*nLookBackCount/LookBackDepth;
-      if (fTestNet) nActualTargetTime = 4;  // 4 second blocks for testnet until fork
+      if (fTestNet) nActualTargetTime = 1;  // Run as fast of block times as possible
       /// debug print
       printf("Retarget(%d): nActualTargetTime = %"PRI64d"   nActualTimespan = %"PRI64d"  avg=%lld\n", 
           pindexLast->nHeight,nActualTargetTime, nActualTimeSpan,nActualTimeSpan/nLookBackCount);
