@@ -1124,8 +1124,8 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
       nActualTargetTime = TargetTimeSpan*nLookBackCount/LookBackDepth;
       if (fTestNet) nActualTargetTime = 1;  // Run as fast of block times as possible
       /// debug print
-      printf("Retarget(%d): nActualTargetTime = %"PRI64d"   nActualTimespan = %"PRI64d"  avg=%lld\n", 
-          pindexLast->nHeight,nActualTargetTime, nActualTimeSpan,nActualTimeSpan/nLookBackCount);
+     // printf("Retarget(%d): nActualTargetTime = %"PRI64d"   nActualTimespan = %"PRI64d"  avg=%lld\n", 
+      //    pindexLast->nHeight,nActualTargetTime, nActualTimeSpan,nActualTimeSpan/nLookBackCount);
    }
    else { 
       const int64 Weight[LookBackDepth] = {35,30,25,20,15,10,5};
@@ -1134,7 +1134,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
       int64 TotalWeight = 0;
       int64 WeightedTimeSum = 0;
       const CBlockIndex* pindex = pindexLast;
-      printf("Retarget(%d): Previous %d completion times:", pindex->nHeight,nLookBackCount);
+     // printf("Retarget(%d): Previous %d completion times:", pindex->nHeight,nLookBackCount);
       for (int i=0; i<nLookBackCount; i++) {
       	  TotalWeight += Weight[i];
           TimeDiff = pindex->GetBlockTime() - pindex->pprev->GetBlockTime();
@@ -1145,8 +1145,8 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
       }
       nActualTargetTime = TargetTimeSpan*TotalWeight;
       if (fTestNet) nActualTargetTime /=4;  // Run testnet blocks SOMEWHAT faster
-      printf("\nWeightedTimeSum = %"PRI64d" TotalTimeDiff = %"PRI64d" Avg Weighted = %"PRI64d"\n", 
-         WeightedTimeSum,TotalTimeDiff,WeightedTimeSum/TotalWeight);
+      //printf("\nWeightedTimeSum = %"PRI64d" TotalTimeDiff = %"PRI64d" Avg Weighted = %"PRI64d"\n", 
+       //  WeightedTimeSum,TotalTimeDiff,WeightedTimeSum/TotalWeight);
       nActualTimeSpan = WeightedTimeSum;  // Hack so the rest of the code flows
    }
 
@@ -1167,9 +1167,9 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
    if (bnNew > bnProofOfWorkLimit)
        bnNew = bnProofOfWorkLimit;
 
-   printf("Difficulty Before: %s\n", CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
-   printf("Difficulty After:  %s\n", bnNew.getuint256().ToString().c_str());
-   printf("Retarget(%d): End of Adjustments\n",pindexLast->nHeight);
+ //  printf("Difficulty Before: %s\n", CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
+  // printf("Difficulty After:  %s\n", bnNew.getuint256().ToString().c_str());
+//   printf("Retarget(%d): End of Adjustments\n",pindexLast->nHeight);
 
    return bnNew.GetCompact();
 }
