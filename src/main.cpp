@@ -1118,7 +1118,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
    }
    assert(pindexFirst);
 
-   if (pindexLast->nHeight < 4000 ) {  // Hard fork at block 2500 
+   if (pindexLast->nHeight < 4000 ) {  // Hard fork at block 4000 
       // Limit adjustment step
       nActualTimeSpan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
       nActualTargetTime = TargetTimeSpan*nLookBackCount/LookBackDepth;
@@ -1155,14 +1155,20 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
        nActualTimeSpan = nActualTargetTime/4;
    else if (nActualTimeSpan > nActualTargetTime*16) // if avg greater than 8192, set to 8192
        nActualTimeSpan = nActualTargetTime*16;
-   printf("Retarget(%d): Adjusting by %"PRI64d" / %"PRI64d"\n",
+   printf(" Retarget(%d): Adjusting by %"PRI64d" / %"PRI64d"\n",
       pindexLast->nHeight,nActualTimeSpan,nActualTargetTime);
 
    // Retarget
    CBigNum bnNew;
    bnNew.SetCompact(pindexLast->nBits);
-   bnNew *= nActualTimeSpan;
-   bnNew /= nActualTargetTime;
+   if (pindexLast->nHeight < 4000 ) {  // Hard fork at block 4000 
+       bnNew *= nActualTimeSpan;
+       bnNew /= nActualTargetTime;
+   }
+   else {
+       bnNew *= nActualTargetTime;
+       bnNew /= nActualTimeSpan;
+   }
 
    if (bnNew > bnProofOfWorkLimit)
        bnNew = bnProofOfWorkLimit;
@@ -2167,6 +2173,8 @@ bool CBlock::AcceptBlock(CValidationState &state, CDiskBlockPos *dbp)
 
         // Check proof of work
         if (nBits != GetNextWorkRequired(pindexPrev, this))
+            if (nHeight < 4000 ||  nHeight > 4010)   /* Transition hack */
+
             return state.DoS(100, error("AcceptBlock() : incorrect proof of work for height %d", nHeight));
 
         // Check timestamp against prev
