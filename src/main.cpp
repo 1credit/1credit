@@ -1167,7 +1167,8 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
 
    printf("Difficulty Before: %s\n", CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
    printf("Difficulty After:  %s\n", bnNew.getuint256().ToString().c_str());
-   printf("Retarget(%d): End of Adjustments\n",pindexLast->nHeight);
+   printf("Retarget(%d) for a previous block time average of %"PRI64d" seconds: Exiting routine\n",
+   	pindexLast->nHeight,TotalTimeDiff/nLookBackCount);
 
    return bnNew.GetCompact();
 }
