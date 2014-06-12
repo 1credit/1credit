@@ -1106,8 +1106,6 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
 {
    unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
    int nLookBackCount = 0;
-   int64 nActualTimeSpan=0;
-   int64 nActualTargetTime=0;
 
    // Genesis block & first block
    if (pindexLast == NULL || pindexLast->nHeight <= 1)
@@ -1126,6 +1124,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
    int64 TotalTimeDiff = 0;
    int64 TotalWeight = 0;
    int64 WeightedTimeSum = 0;
+   int64 WeightedTargetTime = 0;
    const CBlockIndex* pindex = pindexLast;
    for (int i=0; i<nLookBackCount; i++) {
       	  TotalWeight += Weight[i];
@@ -1135,18 +1134,18 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
 	  printf("  (%d):%"PRI64d"", pindex->nHeight, TimeDiff);
 	  pindex = pindex->pprev;
    }
-   nActualTargetTime = TargetTimeSpan*TotalWeight;
-   if (fTestNet) nActualTargetTime /=4;  { // Run testnet blocks SOMEWHAT faster
-      nActualTimeSpan = WeightedTimeSum;   // Hack so the rest of the code flows
+   WeightedTargetTime = TargetTimeSpan*TotalWeight;
+   if (fTestNet) {
+      WeightedTargetTime /=4;   // Run testnet blocks SOMEWHAT faster
    }
 
    //  limit the swing, but allow it to come down faster than going up
-   if (nActualTimeSpan < nActualTargetTime/2)  // Ex: If avg less than 256, set to 256
-       nActualTimeSpan = nActualTargetTime/2;
-   else if (nActualTimeSpan > nActualTargetTime*2) // Ex: if avg greater than 1024, set to 1024
-       nActualTimeSpan = nActualTargetTime*2;
+   if (WeightedTimeSum < WeightedTargetTime/2)  // Ex: If avg less than 256, set to 256
+       WeightedTimeSum = WeightedTargetTime/2;
+   else if (WeightedTimeSum > WeightedTargetTime*2) // Ex: if avg greater than 1024, set to 1024
+       WeightedTimeSum = WeightedTargetTime*2;
    printf(" Retarget(%d): Adjusting by %"PRI64d" / %"PRI64d"\n",
-      pindexLast->nHeight,nActualTimeSpan,nActualTargetTime);
+      pindexLast->nHeight,WeightedTimeSum,WeightedTargetTime);
 
    // Retarget
    // Here is the logic:
@@ -1160,8 +1159,8 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
    //
    CBigNum bnNew;
    bnNew.SetCompact(pindexLast->nBits);
-   bnNew *= nActualTimeSpan;
-   bnNew /= nActualTargetTime;
+   bnNew *= WeightedTimeSum;
+   bnNew /= WeightedTargetTime;
 
    if (bnNew > bnProofOfWorkLimit)
        bnNew = bnProofOfWorkLimit;
