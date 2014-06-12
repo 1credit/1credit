@@ -1141,14 +1141,23 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
    }
 
    //  limit the swing, but allow it to come down faster than going up
-   if (nActualTimeSpan < nActualTargetTime/2)  // Ex: If avg less than 128, set to 128
+   if (nActualTimeSpan < nActualTargetTime/2)  // Ex: If avg less than 256, set to 256
        nActualTimeSpan = nActualTargetTime/2;
-   else if (nActualTimeSpan > nActualTargetTime*2) // Ex: if avg greater than 8192, set to 8192
+   else if (nActualTimeSpan > nActualTargetTime*2) // Ex: if avg greater than 1024, set to 1024
        nActualTimeSpan = nActualTargetTime*2;
    printf(" Retarget(%d): Adjusting by %"PRI64d" / %"PRI64d"\n",
       pindexLast->nHeight,nActualTimeSpan,nActualTargetTime);
 
    // Retarget
+   // Here is the logic:
+   // bnNew is the Hex string used to compare hashes, the number of leading zeros determining
+   // if the hash is hard enough to qualify:
+   // More leading zeros = harder.
+   // More leading zeros makes the numberic value of the hex string SMALLER
+   // So if blocks are happening too fast, we need to strink the value of the hex string
+   // Thus, if too fast, Actual/Target less me less than 1, and shrink the value
+   // Likewise, if too slow, Actual/Target will be greater than 1, and increase the value
+   //
    CBigNum bnNew;
    bnNew.SetCompact(pindexLast->nBits);
    bnNew *= nActualTimeSpan;
