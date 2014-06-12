@@ -1084,6 +1084,9 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
     if (fTestNet && nTime > TargetSpacing*2)
         return bnProofOfWorkLimit.GetCompact();
 
+    if (nTime > TargetSpacing*32)
+        return bnProofOfWorkLimit.GetCompact();
+
     CBigNum bnResult;
     bnResult.SetCompact(nBase);
     while (nTime > 0 && bnResult < bnProofOfWorkLimit)
@@ -1118,64 +1121,45 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
    }
    assert(pindexFirst);
 
-   if (pindexLast->nHeight < 4000 ) {  // Hard fork at block 4000 
-      // Limit adjustment step
-      nActualTimeSpan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-      nActualTargetTime = TargetTimeSpan*nLookBackCount/LookBackDepth;
-      if (fTestNet) nActualTargetTime = 1;  // Run as fast of block times as possible
-      /// debug print
-     // printf("Retarget(%d): nActualTargetTime = %"PRI64d"   nActualTimespan = %"PRI64d"  avg=%lld\n", 
-      //    pindexLast->nHeight,nActualTargetTime, nActualTimeSpan,nActualTimeSpan/nLookBackCount);
-   }
-   else { 
-      const int64 Weight[LookBackDepth] = {35,30,25,20,15,10,5};
-      int64 TimeDiff = 0;
-      int64 TotalTimeDiff = 0;
-      int64 TotalWeight = 0;
-      int64 WeightedTimeSum = 0;
-      const CBlockIndex* pindex = pindexLast;
-     // printf("Retarget(%d): Previous %d completion times:", pindex->nHeight,nLookBackCount);
-      for (int i=0; i<nLookBackCount; i++) {
+   const int64 Weight[LookBackDepth] = {35,30,25,20,15,10,5};
+   int64 TimeDiff = 0;
+   int64 TotalTimeDiff = 0;
+   int64 TotalWeight = 0;
+   int64 WeightedTimeSum = 0;
+   const CBlockIndex* pindex = pindexLast;
+   for (int i=0; i<nLookBackCount; i++) {
       	  TotalWeight += Weight[i];
           TimeDiff = pindex->GetBlockTime() - pindex->pprev->GetBlockTime();
 	  TotalTimeDiff += TimeDiff;
           WeightedTimeSum += (TimeDiff * Weight[i]);
 	  printf("  (%d):%"PRI64d"", pindex->nHeight, TimeDiff);
 	  pindex = pindex->pprev;
-      }
-      nActualTargetTime = TargetTimeSpan*TotalWeight;
-      if (fTestNet) nActualTargetTime /=4;  // Run testnet blocks SOMEWHAT faster
-      //printf("\nWeightedTimeSum = %"PRI64d" TotalTimeDiff = %"PRI64d" Avg Weighted = %"PRI64d"\n", 
-       //  WeightedTimeSum,TotalTimeDiff,WeightedTimeSum/TotalWeight);
-      nActualTimeSpan = WeightedTimeSum;  // Hack so the rest of the code flows
+   }
+   nActualTargetTime = TargetTimeSpan*TotalWeight;
+   if (fTestNet) nActualTargetTime /=4;  { // Run testnet blocks SOMEWHAT faster
+      nActualTimeSpan = WeightedTimeSum;   // Hack so the rest of the code flows
    }
 
    //  limit the swing, but allow it to come down faster than going up
-   if (nActualTimeSpan < nActualTargetTime/4)  // If avg less than 128, set to 128
-       nActualTimeSpan = nActualTargetTime/4;
-   else if (nActualTimeSpan > nActualTargetTime*16) // if avg greater than 8192, set to 8192
-       nActualTimeSpan = nActualTargetTime*16;
+   if (nActualTimeSpan < nActualTargetTime/2)  // Ex: If avg less than 128, set to 128
+       nActualTimeSpan = nActualTargetTime/2;
+   else if (nActualTimeSpan > nActualTargetTime*2) // Ex: if avg greater than 8192, set to 8192
+       nActualTimeSpan = nActualTargetTime*2;
    printf(" Retarget(%d): Adjusting by %"PRI64d" / %"PRI64d"\n",
       pindexLast->nHeight,nActualTimeSpan,nActualTargetTime);
 
    // Retarget
    CBigNum bnNew;
    bnNew.SetCompact(pindexLast->nBits);
-   if (pindexLast->nHeight < 4000 ) {  // Hard fork at block 4000 
-       bnNew *= nActualTimeSpan;
-       bnNew /= nActualTargetTime;
-   }
-   else {
-       bnNew *= nActualTargetTime;
-       bnNew /= nActualTimeSpan;
-   }
+   bnNew *= nActualTimeSpan;
+   bnNew /= nActualTargetTime;
 
    if (bnNew > bnProofOfWorkLimit)
        bnNew = bnProofOfWorkLimit;
 
- //  printf("Difficulty Before: %s\n", CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
-  // printf("Difficulty After:  %s\n", bnNew.getuint256().ToString().c_str());
-//   printf("Retarget(%d): End of Adjustments\n",pindexLast->nHeight);
+   printf("Difficulty Before: %s\n", CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
+   printf("Difficulty After:  %s\n", bnNew.getuint256().ToString().c_str());
+   printf("Retarget(%d): End of Adjustments\n",pindexLast->nHeight);
 
    return bnNew.GetCompact();
 }
@@ -2173,7 +2157,7 @@ bool CBlock::AcceptBlock(CValidationState &state, CDiskBlockPos *dbp)
 
         // Check proof of work
         if (nBits != GetNextWorkRequired(pindexPrev, this))
-            if (nHeight < 4000 ||  nHeight > 4010)   /* Transition hack */
+            if (nHeight > 4010)   /* Transition hack */
 
             return state.DoS(100, error("AcceptBlock() : incorrect proof of work for height %d", nHeight));
 
