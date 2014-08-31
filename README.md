@@ -32,8 +32,10 @@ Total coins:  (2^63-1)/100,000,000 (# of Satoshi in a coin):  92,233,720,368
 512 second (~8.5 minute) block time - reducing stale mining block percentages 
 to around 2%
 
-256 new block confirms (~1.5 day confirms)
+156 new block confirms (~1 day confirms)
 16 block transaction confirms (~2.3 hours)
+
+Kimoto Gravity Well difficulty adjustment
 
 ~1.5M years worth of coins
 
