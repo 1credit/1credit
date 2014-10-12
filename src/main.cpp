@@ -19,6 +19,7 @@ using namespace std;
 using namespace boost;
 
 #define FIRST_KGW_BLOCK 5000
+#define KGW_FIX_BLOCK = 5811
 
 //
 // Global state
@@ -1262,9 +1263,13 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
         uint64 PastBlocksMin = PastSecondsMin / BlocksTargetSpacing;
         uint64 PastBlocksMax = PastSecondsMax / BlocksTargetSpacing;
 
-        if (pindexLast->nHeight <= FIRST_KGW_BLOCK) return OldGetNextWorkRequired(pindexLast, pblock);
+        if (pindexLast->nHeight <= FIRST_KGW_BLOCK) {
+		return OldGetNextWorkRequired(pindexLast, pblock);
+	} else if (pindexLast->nHeight <= KGW_FIX_BLOCK) {
+		return KimotoGravityWell(pindexLast, pblock, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax); 
+	}
 
-        return KimotoGravityWell(pindexLast, pblock, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax);
+        return KimotoGravityWell(pindexLast, pblock, BlocksTargetSpacing, 7, PastBlocksMax); // Sample 7 blocks before making a call on the diff
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
