@@ -19,6 +19,7 @@ using namespace std;
 using namespace boost;
 
 #define FIRST_KGW_BLOCK 5000
+#define FIRST_KGWTW_BLOCK 6000
 
 //
 // Global state
@@ -1074,6 +1075,7 @@ int64 static GetBlockValue(int nHeight, int64 nFees)
 static const int TargetSpacing = 512; // 1CRedit: ~8.5 minutes
 static const int LookBackDepth = 7;   // 1Credit:  About 1 hour
 static const int64 TargetTimeSpan = TargetSpacing * LookBackDepth;
+static const int KGWInterval = 4;  // Timewarp fix - retarget every 4 blocks instead of every block in testnet
 
 //
 // minimum amount of work that could possibly be required nTime after
@@ -1101,6 +1103,75 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
     if (bnResult > bnProofOfWorkLimit)
         bnResult = bnProofOfWorkLimit;
     return bnResult.GetCompact();
+}
+
+unsigned int static KimotoGravityWellTW(const CBlockIndex* pindexLast, const CBlockHeader *pblock, uint64 TargetBlocksSpacingSeconds, uint64 PastBlocksMin, uint64 PastBlocksMax) {
+        /* current difficulty formula, megacoin - kimoto gravity well */
+        const CBlockIndex *BlockLastSolved = pindexLast;
+        const CBlockIndex *BlockReading = pindexLast;
+        const CBlockHeader *BlockCreating = pblock;
+        BlockCreating = BlockCreating;
+        uint64 PastBlocksMass = 0;
+        int64 PastRateActualSeconds = 0;
+        int64 PastRateTargetSeconds = 0;
+        double PastRateAdjustmentRatio = double(1);
+        CBigNum PastDifficultyAverage;
+        CBigNum PastDifficultyAveragePrev;
+        double EventHorizonDeviation;
+        double EventHorizonDeviationFast;
+        double EventHorizonDeviationSlow;
+
+    printf("Difficulty Retarget - Kimoto Gravity Well TW\n");
+    if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || (uint64)BlockLastSolved->nHeight < PastBlocksMin) { return bnProofOfWorkLimit.GetCompact(); }
+
+        int64 LatestBlockTime = BlockLastSolved->GetBlockTime();  /* KGW TW fix */
+        for (unsigned int i = 1; BlockReading && BlockReading->nHeight > 0; i++) {
+                if (PastBlocksMax > 0 && i > PastBlocksMax) { break; }
+                PastBlocksMass++;
+
+                if (i == 1) { PastDifficultyAverage.SetCompact(BlockReading->nBits); }
+                else { PastDifficultyAverage = ((CBigNum().SetCompact(BlockReading->nBits) - PastDifficultyAveragePrev) / i) + PastDifficultyAveragePrev; }
+                PastDifficultyAveragePrev = PastDifficultyAverage;
+
+                PastRateActualSeconds = BlockLastSolved->GetBlockTime() - BlockReading->GetBlockTime();
+                /* KGW TW fix */
+                if (LatestBlockTime < BlockReading->GetBlockTime()) {
+                           LatestBlockTime = BlockReading->GetBlockTime();
+                }
+                PastRateActualSeconds = LatestBlockTime - BlockReading->GetBlockTime();
+                /* End KGW TW fix */
+                PastRateTargetSeconds = TargetBlocksSpacingSeconds * PastBlocksMass;
+                PastRateAdjustmentRatio = double(1);
+                /* KGW TW fix */
+                if (PastRateActualSeconds < 1) { PastRateActualSeconds = 1; }
+                /* End of KGW TW fix */
+                if (PastRateActualSeconds != 0 && PastRateTargetSeconds != 0) {
+                    PastRateAdjustmentRatio = double(PastRateTargetSeconds) / double(PastRateActualSeconds);
+                }
+                EventHorizonDeviation = 1 + (0.7084 * pow((double(PastBlocksMass)/double(28.2)), -1.228));
+                EventHorizonDeviationFast = EventHorizonDeviation;
+                EventHorizonDeviationSlow = 1 / EventHorizonDeviation;
+
+                if (PastBlocksMass >= PastBlocksMin) {
+                        if ((PastRateAdjustmentRatio <= EventHorizonDeviationSlow) || (PastRateAdjustmentRatio >= EventHorizonDeviationFast)) { assert(BlockReading); break; }
+                }
+                if (BlockReading->pprev == NULL) { assert(BlockReading); break; }
+                BlockReading = BlockReading->pprev;
+        }
+
+        CBigNum bnNew(PastDifficultyAverage);
+        if (PastRateActualSeconds != 0 && PastRateTargetSeconds != 0) {
+                bnNew *= PastRateActualSeconds;
+                bnNew /= PastRateTargetSeconds;
+        }
+    if (bnNew > bnProofOfWorkLimit) { bnNew = bnProofOfWorkLimit; }
+
+    printf("PastRateAdjustmentRatio = %g\n", PastRateAdjustmentRatio);
+    printf("Before: %08x %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
+    printf("After: %08x %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+
+
+    return bnNew.GetCompact();
 }
 
 unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, const CBlockHeader *pblock, uint64 TargetBlocksSpacingSeconds, uint64 PastBlocksMin, uint64 PastBlocksMax) {
@@ -1262,9 +1333,14 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
         uint64 PastBlocksMin = PastSecondsMin / BlocksTargetSpacing;
         uint64 PastBlocksMax = PastSecondsMax / BlocksTargetSpacing;
 
-        if (pindexLast->nHeight <= FIRST_KGW_BLOCK) return OldGetNextWorkRequired(pindexLast, pblock);
+        if (pindexLast->nHeight <= FIRST_KGW_BLOCK) {
+	   return OldGetNextWorkRequired(pindexLast, pblock);
+	}
+        if (pindexLast->nHeight <= FIRST_KGWTW_BLOCK) {
+	   return KimotoGravityWell(pindexLast, pblock, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax);
+        }
 
-        return KimotoGravityWell(pindexLast, pblock, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax);
+        return KimotoGravityWellTW(pindexLast, pblock, BlocksTargetSpacing, 7, 168);  // 1 hour min, 1 day max
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
@@ -2261,8 +2337,11 @@ bool CBlock::AcceptBlock(CValidationState &state, CDiskBlockPos *dbp)
         // Check proof of work
         if (nBits != GetNextWorkRequired(pindexPrev, this))
             if (nHeight > 4010) {  /* Transition hacks */
-               if (nHeight < FIRST_KGW_BLOCK ||  nHeight > (FIRST_KGW_BLOCK+21)) 
-                   return state.DoS(100, error("AcceptBlock() : incorrect proof of work for height %d", nHeight));
+               if (nHeight < FIRST_KGW_BLOCK ||  nHeight > (FIRST_KGW_BLOCK+21)) {
+                   if (nHeight < FIRST_KGWTW_BLOCK ||  nHeight > (FIRST_KGWTW_BLOCK+21)) {
+                      return state.DoS(100, error("AcceptBlock() : incorrect proof of work for height %d", nHeight));
+		   }
+	       }
             }
 
         // Check timestamp against prev
