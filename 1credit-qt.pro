@@ -1,7 +1,7 @@
 TEMPLATE = app
 TARGET = 1credit-qt
 macx:TARGET = "1CRedit-Qt"
-VERSION = 0.8.6.2
+VERSION = 0.9.9.23
 INCLUDEPATH += src src/json src/qt
 QT += core gui network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -21,25 +21,25 @@ CONFIG += static
 #    BDB_LIB_PATH, OPENSSL_INCLUDE_PATH and OPENSSL_LIB_PATH respectively
 
 #
-# UNCOMMENT ALL OF THESE TO ENABLE WINDOWS BUILDS
+# COMMENT ALL OF THESE TO ENABLE Unix/ MAC OS BUILDS
 #
-#windows:LIBS += -lshlwapi
-#LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
-#LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX
-#windows:LIBS += -lws2_32 -lole32 -loleaut32 -luuid -lgdi32
-#LIBS += -lboost_system-mgw48-mt-sd-1_55 -lboost_filesystem-mgw48-mt-sd-1_55 -lboost_program_options-mgw48-mt-sd-1_55 -lboost_thread-mgw48-mt-sd-1_55
-#BOOST_LIB_SUFFIX=-mgw48-mt-s-1_55
-#BOOST_INCLUDE_PATH=C:/deps/boost_1_55_0
-#BOOST_LIB_PATH=C:/deps/boost_1_55_0/stage/lib
-#BDB_INCLUDE_PATH=C:/deps/db-4.8.30.NC/build_unix
-#BDB_LIB_PATH=C:/deps/db-4.8.30.NC/build_unix
-#OPENSSL_INCLUDE_PATH=C:/deps/openssl-1.0.1g/include
-#OPENSSL_LIB_PATH=C:/deps/openssl-1.0.1g
+windows:LIBS += -lshlwapi
+LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
+LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX
+windows:LIBS += -lws2_32 -lole32 -loleaut32 -luuid -lgdi32
+LIBS += -lboost_system-mgw49-mt-sd-1_58 -lboost_filesystem-mgw49-mt-sd-1_58 -lboost_program_options-mgw49-mt-sd-1_58 -lboost_thread-mgw49-mt-sd-1_58
+BOOST_LIB_SUFFIX=-mgw49-mt-s-1_58
+BOOST_INCLUDE_PATH=C:/deps/boost_1_58_0
+BOOST_LIB_PATH=C:/deps/boost_1_58_0/stage/lib
+#BDB_INCLUDE_PATH=C:/deps/db-6.1.23/build_unix
+#BDB_LIB_PATH=C:/deps/db-6.1.23/build_unix
+#OPENSSL_INCLUDE_PATH=C:/deps/openssl-1.0.2a/include
+#OPENSSL_LIB_PATH=C:/deps/openssl-1.0.2a
 
 # 
-# Settings for building under Linux, comment out for Windows & Mac Os builds
+# Uncomment for building under Linux
 #
-BDB_INCLUDE_PATH=/usr/include/db4.8
+#BDB_INCLUDE_PATH=/usr/include/db4.8
 
 OBJECTS_DIR = build
 MOC_DIR = build
