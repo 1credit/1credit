@@ -20,7 +20,7 @@ using namespace boost;
 
 #define FIRST_KGW_BLOCK 5000
 #define FIRST_KGWTW_BLOCK 6000
-
+#define FIRST_KGWMB_BLOCK 16175
 //
 // Global state
 //
@@ -1236,8 +1236,15 @@ unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, const CBloc
 
         CBigNum bnNew(PastDifficultyAverage);
         if (PastRateActualSeconds != 0 && PastRateTargetSeconds != 0) {
-                bnNew *= PastRateActualSeconds;
-                bnNew /= PastRateTargetSeconds;
+	   //  add a governer to change rate
+	   if (BlockLastSolved->nHeight >=  FIRST_KGWMB_BLOCK) {
+	       if (PastRateActualSeconds < PastRateTargetSeconds/4)  
+	           PastRateActualSeconds = PastRateTargetSeconds/4;
+	       else if (PastRateActualSeconds > PastRateTargetSeconds*4)
+	           PastRateActualSeconds = PastRateTargetSeconds*4;
+	   }
+           bnNew *= PastRateActualSeconds;
+           bnNew /= PastRateTargetSeconds;
         }
     if (bnNew > bnProofOfWorkLimit) { bnNew = bnProofOfWorkLimit; }
 
@@ -1339,8 +1346,10 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
         if (pindexLast->nHeight <= FIRST_KGWTW_BLOCK) {
 	   return KimotoGravityWell(pindexLast, pblock, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax);
         }
-
-        return KimotoGravityWellTW(pindexLast, pblock, BlocksTargetSpacing, 7, 168);  // 1 hour min, 1 day max
+        if (pindexLast->nHeight < FIRST_KGWMB_BLOCK) {
+            return KimotoGravityWellTW(pindexLast, pblock, BlocksTargetSpacing, 7, 168);  // 1 hour min, 1 day max
+        }
+        return KimotoGravityWellTW(pindexLast, pblock, BlocksTargetSpacing, 7, 1024);  // 1 hour min, about 6 days max
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
@@ -2339,7 +2348,9 @@ bool CBlock::AcceptBlock(CValidationState &state, CDiskBlockPos *dbp)
             if (nHeight > 4010) {  /* Transition hacks */
                if (nHeight < FIRST_KGW_BLOCK ||  nHeight > (FIRST_KGW_BLOCK+21)) {
                    if (nHeight < FIRST_KGWTW_BLOCK ||  nHeight > (FIRST_KGWTW_BLOCK+21)) {
-                      return state.DoS(100, error("AcceptBlock() : incorrect proof of work for height %d", nHeight));
+                       if (nHeight < FIRST_KGWMB_BLOCK ||  nHeight > (FIRST_KGWMB_BLOCK+21)) {
+                           return state.DoS(100, error("AcceptBlock() : incorrect proof of work for height %d", nHeight));
+                       }
 		   }
 	       }
             }
