@@ -31,10 +31,10 @@ LIBS += -lboost_system-mgw49-mt-sd-1_58 -lboost_filesystem-mgw49-mt-sd-1_58 -lbo
 BOOST_LIB_SUFFIX=-mgw49-mt-s-1_58
 BOOST_INCLUDE_PATH=C:/deps/boost_1_58_0
 BOOST_LIB_PATH=C:/deps/boost_1_58_0/stage/lib
-#BDB_INCLUDE_PATH=C:/deps/db-6.1.23/build_unix
-#BDB_LIB_PATH=C:/deps/db-6.1.23/build_unix
-#OPENSSL_INCLUDE_PATH=C:/deps/openssl-1.0.2a/include
-#OPENSSL_LIB_PATH=C:/deps/openssl-1.0.2a
+BDB_INCLUDE_PATH=C:/deps/db-6.1.23/build_unix
+BDB_LIB_PATH=C:/deps/db-6.1.23/build_unix
+OPENSSL_INCLUDE_PATH=C:/deps/openssl-1.0.2a/include
+OPENSSL_LIB_PATH=C:/deps/openssl-1.0.2a
 
 # 
 # Uncomment for building under Linux
