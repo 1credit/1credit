@@ -3454,6 +3454,14 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
             pfrom->fDisconnect = true;
             return false;
         }
+	 if (pfrom->nVersion > (PROTOCOL_VERSION + 5))
+	         {
+		    // disconnect from peers older than this proto version
+		    printf("partner %s using far future version %i; disconnecting\n", pfrom->addr.ToString().c_str(), pfrom->nVersion);
+		    pfrom->fDisconnect = true;
+		    return false;
+		  }
+			     //
 
         if (pfrom->nVersion == 10300)
             pfrom->nVersion = 300;
